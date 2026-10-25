@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>Auto Render</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<style> html, body { margin: 0; padding: 0; background: #fff; } </style>
+</head>
+<body>
+<div id="wrap"><pre class="mermaid" id="diagram"></pre></div>
+<script>
+const CODE = `flowchart LR
+    Student(["学生 (买家/卖家)"])
+    Admin(["管理员 Admin"])
+    subgraph SG["智慧校园闲置交易与综合互助平台"]
+        direction TB
+        UC1(("浏览/搜索/筛选商品"))
+        UC2(("发布闲置商品"))
+        UC3(("购买商品"))
+        UC4(("余额充值"))
+        UC5(("查看/发表留言"))
+        UC6(("删除自己的留言"))
+        UC7(("删除自己发布的商品"))
+        UC8(("发布失物招领/寻物启事"))
+        UC9(("删除自己发布的信息"))
+        UC10(("查看历史订单"))
+        UC11(("商品审核: 上架/下架"))
+        UC12(("删除任何商品/留言/信息"))
+        UC13(("查看实时数据大屏"))
+        UC14(("交易合法性校验"))
+        UC15(("表单完整性校验"))
+        UC1 ~~~ UC6
+        UC2 ~~~ UC7
+        UC3 ~~~ UC8
+        UC4 ~~~ UC9
+        UC5 ~~~ UC10
+        UC6 ~~~ UC11
+        UC7 ~~~ UC12
+        UC8 ~~~ UC13
+    end
+    Student --> UC1
+    Student --> UC2
+    Student --> UC3
+    Student --> UC4
+    Student --> UC5
+    Student --> UC6
+    Student --> UC7
+    Student --> UC8
+    Student --> UC9
+    Student --> UC10
+    Admin --> UC1
+    Admin --> UC11
+    Admin --> UC12
+    Admin --> UC13
+    UC3 -.->|include| UC14
+    UC2 -.->|include| UC15
+    UC8 -.->|include| UC15
+    UC4 -.->|extend| UC3`;
+
+document.getElementById("diagram").textContent = CODE;
+window.__ready = false;
+mermaid.initialize({ startOnLoad: false, theme: "default",
+  flowchart: { useMaxWidth: false },
+  themeVariables: { clusterBkg: "#ffffff" } });
+mermaid.run({ querySelector: ".mermaid" }).then(() => {
+  const svgs = document.querySelectorAll("#wrap svg");
+  for (let i = 1; i < svgs.length; i++) svgs[i].remove();
+  const svg = document.querySelector("#wrap svg");
+  svg.removeAttribute("style");
+  svg.style.overflow = "visible";
+  let u = null;
+  svg.querySelectorAll("*").forEach(el => {
+    const r = el.getBoundingClientRect();
+    if (r.width === 0 && r.height === 0) return;
+    if (!u) u = { l: r.left, t: r.top, r: r.right, b: r.bottom };
+    else { u.l = Math.min(u.l, r.left); u.t = Math.min(u.t, r.top); u.r = Math.max(u.r, r.right); u.b = Math.max(u.b, r.bottom); }
+  });
+  const sr = svg.getBoundingClientRect();
+  u.l = Math.min(u.l, sr.left); u.t = Math.min(u.t, sr.top);
+  u.r = Math.max(u.r, sr.right); u.b = Math.max(u.b, sr.bottom);
+  const w = Math.ceil(u.r - u.l) + 8, h = Math.ceil(u.b - u.t) + 8;
+  const wrapEl = document.getElementById("wrap");
+  wrapEl.style.position = "relative";
+  svg.style.position = "absolute";
+  svg.style.left = (sr.left - u.l) + "px";
+  svg.style.top = (sr.top - u.t) + "px";
+  document.body.style.width = w + "px";
+  document.body.style.height = h + "px";
+  window.__meta = { w: w, h: h };
+  window.__ready = true;
+}).catch(e => { window.__err = String(e); window.__ready = true; });
+</script>
+</body>
+</html>

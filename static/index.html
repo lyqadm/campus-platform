@@ -1,0 +1,755 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>智慧校园闲置交易与综合互助平台</title>
+  <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+  <script src="https://unpkg.com/echarts@5/dist/echarts.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: "PingFang SC", "Microsoft YaHei", sans-serif; }
+    body { background: #f4f6f9; color: #333; }
+    html { overflow-y: scroll; } /* 始终保留滚动条空间，避免内容增减导致页面横向跳动 */
+    .navbar { background: linear-gradient(135deg, #1e3c72, #2a5298); color: #fff; padding: 14px 30px 16px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+    .nav-top { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px 20px; margin-bottom: 14px; }
+    .nav-top h2 { white-space: nowrap; font-size: 20px; }
+    .account-box { white-space: nowrap; display: flex; align-items: center; gap: 10px; font-size: 14px; }
+    .account-box .btn { padding: 6px 14px; }
+    .nav-tabs { display: flex; flex-wrap: wrap; }
+    .nav-tabs button { background: transparent; border: 1px solid rgba(255,255,255,0.4); color: #fff; padding: 8px 16px; margin-right: 10px; border-radius: 6px; cursor: pointer; font-size: 14px; }
+    .nav-tabs button.active { background: #fff; color: #1e3c72; font-weight: bold; }
+    .container { max-width: 1200px; margin: 24px auto; padding: 0 20px; }
+    .toolbar { background: #fff; padding: 16px; border-radius: 10px; margin-bottom: 20px; display: flex; gap: 12px; align-items: center; box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
+    input, select { padding: 8px 12px; border: 1px solid #dcdfe6; border-radius: 6px; outline: none; }
+    .btn { background: #2a5298; color: #fff; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; }
+    .btn:disabled { background: #9ca3af; cursor: not-allowed; }
+    .btn-success { background: #10b981; }
+    .btn-danger { background: #ef4444; }
+    .btn-comment { background: #6366f1; }
+    .status-box { flex: 1.2; display: flex; align-items: center; justify-content: center; background: #f3f4f6; color: #9ca3af; border-radius: 6px; font-size: 13px; padding: 8px 0; cursor: not-allowed; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); gap: 20px; min-height: 620px; align-content: start; }
+    .empty-tip { grid-column: 1 / -1; text-align: center; color: #aaa; font-size: 14px; padding: 80px 0; }
+    .item-title { margin-top: 10px; font-size: 17px; min-height: 46px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    .item-desc { color: #666; font-size: 13px; line-height: 1.5; margin-bottom: 12px; min-height: 40px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    .card { background: #fff; border-radius: 10px; padding: 18px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); display: flex; flex-direction: column; justify-content: space-between; }
+    .tag { display: inline-block; padding: 3px 8px; border-radius: 4px; font-size: 12px; background: #e0e7ff; color: #1e40af; margin-right: 6px; }
+    .price { color: #e11d48; font-size: 22px; font-weight: bold; margin: 10px 0; }
+    table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 10px; overflow: hidden; }
+    th, td { padding: 12px 15px; text-align: left; border-bottom: 1px solid #eee; font-size: 14px; }
+    th { background: #f8fafc; font-weight: 600; }
+    .chart-box { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 24px; }
+    .chart-card { background: #fff; padding: 20px; border-radius: 10px; height: 340px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+    .live-bar { display: flex; align-items: center; gap: 8px; background: #fff; border-radius: 8px; padding: 8px 14px; margin-bottom: 14px; color: #666; font-size: 13px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+    .live-dot { width: 9px; height: 9px; border-radius: 50%; background: #10b981; display: inline-block; animation: pulse 1.5s ease-in-out infinite; }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.25; } }
+
+    /* ===== 响应式适配：平板/手机/窄窗口 ===== */
+    @media (max-width: 768px) {
+      .navbar { padding: 12px 14px; }
+      .nav-top { margin-bottom: 10px; }
+      .nav-top h2 { font-size: 17px; }
+      .nav-tabs button { padding: 7px 10px; margin-right: 8px; font-size: 13px; }
+      .account-box { font-size: 13px; white-space: normal; flex-wrap: wrap; row-gap: 6px; }
+      .container { margin: 14px auto; padding: 0 12px; }
+      .toolbar { flex-wrap: wrap; }
+      .toolbar input, .toolbar select { min-width: 140px; }
+      .chart-box { grid-template-columns: 1fr; }
+      .chart-card { height: 300px; }
+      .grid { grid-template-columns: 1fr; min-height: 400px; }
+      table { display: block; overflow-x: auto; }
+      th, td { padding: 10px 12px; }
+      .modal { width: 94vw; }
+    }
+    @media (max-width: 480px) {
+      .nav-tabs button { margin: 0 6px 6px 0; }
+      .nav-tabs { gap: 0; }
+      .grid { gap: 14px; }
+    }
+    .modal-mask { position: fixed; top:0; left:0; right:0; bottom:0; background: rgba(15,23,42,0.5); display: flex; align-items: center; justify-content: center; z-index: 99; }
+    .modal { background: #fff; border-radius: 12px; padding: 22px; width: 500px; max-width: 92vw; box-shadow: 0 10px 40px rgba(0,0,0,0.25); }
+    .comment-list { max-height: 300px; overflow-y: auto; border: 1px solid #eee; border-radius: 8px; padding: 4px 14px; }
+    .comment-item { padding: 10px 0; border-bottom: 1px dashed #eee; }
+    .comment-item:last-child { border-bottom: none; }
+  </style>
+</head>
+<body>
+<div id="app">
+  <div class="navbar">
+    <div class="nav-top">
+      <h2>🎓 智慧校园闲置交易与综合互助平台</h2>
+      <div class="account-box">
+        <span>当前账号：<b>{{ currentUser }}</b> (余额: ￥{{ userInfo.balance || 0 }})</span>
+        <button class="btn btn-success" @click="openRecharge">💰 充值</button>
+        <select v-model="currentUser" @change="fetchData" title="切换账号">
+          <option value="张三(学生)">张三(学生)</option>
+          <option value="李四(学生)">李四(学生)</option>
+          <option value="王五(学生)">王五(学生)</option>
+          <option value="Admin(管理员)">Admin(管理员)</option>
+        </select>
+      </div>
+    </div>
+    <div class="nav-tabs">
+      <button :class="{active: tab==='market'}" @click="tab='market'">🛒 二手集市大厅</button>
+      <button :class="{active: tab==='lost'}" @click="tab='lost'">📢 失物招领专区</button>
+      <button :class="{active: tab==='center'}" @click="tab='center'">👤 个人中心与发布</button>
+      <button v-if="userInfo.role==='admin'" :class="{active: tab==='admin'}" @click="switchAdminTab">📊 管理员后台与数据大屏</button>
+    </div>
+  </div>
+
+  <div class="container">
+    <!-- 1. 二手集市大厅 -->
+    <div v-if="tab==='market'">
+      <div class="toolbar">
+        <input v-model="searchKey" placeholder="搜索商品名称或描述..." style="flex:1;">
+        <select v-model="selectedCategory">
+          <option value="">全部分类</option>
+          <option value="数码电子">数码电子</option>
+          <option value="图书教材">图书教材</option>
+          <option value="生活百货">生活百货</option>
+          <option value="代步工具">代步工具</option>
+          <option value="文体乐器">文体乐器</option>
+          <option value="运动健身">运动健身</option>
+          <option value="美妆个护">美妆个护</option>
+          <option value="服饰鞋包">服饰鞋包</option>
+        </select>
+      </div>
+      <div class="grid">
+        <div v-if="filteredItems.length===0" class="empty-tip">😢 没有找到相关商品，换个关键词或分类试试~</div>
+        <div class="card" v-for="item in filteredItems" :key="item.id">
+          <div>
+            <span class="tag">{{ item.category }}</span>
+            <span class="tag" style="background:#fef3c7;color:#92400e;">{{ item.condition }}</span>
+            <h3 class="item-title">{{ item.title }}</h3>
+            <div class="price">￥{{ item.price }}</div>
+            <p class="item-desc">{{ item.description }}</p>
+          </div>
+          <div style="border-top:1px solid #eee;padding-top:12px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+              <span style="font-size:12px;color:#888;">👤 卖家：{{ item.seller }}</span>
+              <span class="tag" :style="statusStyle(item.status)">{{ item.status }}</span>
+            </div>
+            <div style="display:flex;gap:10px;">
+              <button class="btn btn-comment" style="flex:1;white-space:nowrap;" @click="openComments(item)">💬 留言({{ item.comment_count || 0 }})</button>
+              <button v-if="item.status==='在售'" class="btn btn-success" style="flex:1.2;white-space:nowrap;" @click="buyItem(item)">🛒 立即购买</button>
+              <span v-else class="status-box">{{ item.status }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. 失物招领专区 -->
+    <div v-if="tab==='lost'">
+      <div class="toolbar">
+        <select v-model="newLost.kind"><option value="寻物启事">寻物启事</option><option value="失物招领">失物招领</option></select>
+        <input v-model="newLost.title" placeholder="物品名称及特征" style="flex:1;">
+        <input v-model="newLost.location" placeholder="丢失/拾取地点">
+        <input v-model="newLost.contact" placeholder="联系方式">
+        <button class="btn" :disabled="!lostFormValid" @click="publishLost">发布信息</button>
+      </div>
+      <table>
+        <thead><tr><th>类型</th><th>物品描述</th><th>地点</th><th>联系方式</th><th>发布人</th><th>发布日期</th><th>操作</th></tr></thead>
+        <tbody>
+          <tr v-for="lf in lostFound" :key="lf.id">
+            <td><span class="tag" :style="lf.kind==='寻物启事'?'background:#fee2e2;color:#991b1b':'background:#d1fae5;color:#065f46'">{{ lf.kind }}</span></td>
+            <td><b>{{ lf.title }}</b></td>
+            <td>{{ lf.location }}</td>
+            <td>{{ lf.contact }}</td>
+            <td>{{ lf.publisher || '—' }}</td>
+            <td>{{ lf.pub_date }}</td>
+            <td><a v-if="lf.publisher===currentUser || userInfo.role==='admin'" @click="deleteLost(lf)" style="color:#ef4444;cursor:pointer;">删除</a><span v-else style="color:#ccc;font-size:12px;">—</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- 3. 个人中心与发布闲置 -->
+    <div v-if="tab==='center'">
+      <div class="toolbar" style="flex-wrap:wrap;">
+        <h4 style="width:100%;margin-bottom:6px;">➕ 发布我的闲置商品</h4>
+        <input v-model="newItem.title" placeholder="商品名称（如：罗技机械键盘）">
+        <select v-model="newItem.category">
+          <option value="数码电子">数码电子</option><option value="图书教材">图书教材</option>
+          <option value="生活百货">生活百货</option><option value="代步工具">代步工具</option>
+          <option value="文体乐器">文体乐器</option><option value="运动健身">运动健身</option>
+          <option value="美妆个护">美妆个护</option><option value="服饰鞋包">服饰鞋包</option>
+        </select>
+        <input v-model.number="newItem.price" type="number" placeholder="价格(元)">
+        <select v-model="newItem.condition"><option value="全新">全新</option><option value="九五新">九五新</option><option value="九成新">九成新</option><option value="八成新">八成新</option></select>
+        <input v-model="newItem.description" placeholder="详细描述与交易地点..." style="flex:1;">
+        <button class="btn btn-success" :disabled="!itemFormValid" @click="publishItem">确认上架</button>
+      </div>
+      <h3 style="margin:20px 0 10px;">📦 我发布的商品</h3>
+      <table>
+        <thead><tr><th>商品名称</th><th>分类</th><th>价格</th><th>状态</th><th>操作</th></tr></thead>
+        <tbody>
+          <tr v-for="it in myItems" :key="it.id">
+            <td><b>{{ it.title }}</b></td>
+            <td>{{ it.category }}</td>
+            <td style="color:#e11d48;font-weight:bold;">￥{{ it.price }}</td>
+            <td><span class="tag" :style="statusStyle(it.status)">{{ it.status }}</span></td>
+            <td>
+              <button v-if="it.status!=='已售出' && !orderedItemIds.has(it.id)" class="btn btn-danger" style="padding:4px 10px;" @click="deleteItem(it)">删除</button>
+              <span v-else style="color:#bbb;font-size:12px;">已成交不可删</span>
+            </td>
+          </tr>
+          <tr v-if="myItems.length===0"><td colspan="5" style="color:#aaa;text-align:center;padding:24px 0;">还没有发布过商品，用上方表单发布第一件吧~</td></tr>
+        </tbody>
+      </table>
+      <h3 style="margin:20px 0 10px;">🧾 平台历史交易订单</h3>
+      <table>
+        <thead><tr><th>订单号</th><th>商品名称</th><th>买家</th><th>卖家</th><th>成交金额</th><th>交易日期</th></tr></thead>
+        <tbody>
+          <tr v-for="o in orders" :key="o.id">
+            <td>#20260{{ o.id }}</td><td>{{ o.item_title }}</td><td>{{ o.buyer }}</td><td>{{ o.seller }}</td>
+            <td style="color:#e11d48;font-weight:bold;">￥{{ o.price }}</td><td>{{ o.order_date }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- 4. 管理员后台与统计大屏 -->
+    <div v-if="tab==='admin'">
+      <div class="live-bar">
+        <span class="live-dot"></span>
+        <span>实时统计中 · 每 5 秒自动刷新 · 更新于 {{ lastUpdate || '--' }}</span>
+      </div>
+      <div class="chart-box">
+        <div class="chart-card" id="pieChart"></div>
+        <div class="chart-card" id="lineChart"></div>
+      </div>
+      <h3 style="margin-bottom:12px;">🛡️ 商品审核与状态管理（管理员专属）</h3>
+      <table>
+        <thead><tr><th>ID</th><th>商品名称</th><th>分类</th><th>价格</th><th>卖家</th><th>当前状态</th><th>管理操作</th></tr></thead>
+        <tbody>
+          <tr v-for="item in items" :key="item.id">
+            <td>{{ item.id }}</td><td>{{ item.title }}</td><td>{{ item.category }}</td><td>￥{{ item.price }}</td><td>{{ item.seller }}</td>
+            <td><span class="tag">{{ item.status }}</span></td>
+            <td>
+              <button class="btn btn-success" style="padding:4px 10px;margin-right:6px;" :disabled="itemLocked(item)" :title="itemLocked(item) ? '已存在交易记录，不可上架' : ''" @click="auditItem(item.id, '在售')">通过上架</button>
+              <button class="btn btn-danger" style="padding:4px 10px;margin-right:6px;" :disabled="itemLocked(item)" :title="itemLocked(item) ? '已存在交易记录，不可下架' : ''" @click="auditItem(item.id, '违规下架')">强制下架</button>
+              <button class="btn btn-danger" style="padding:4px 10px;background:#7f1d1d;" @click="deleteItem(item)">删除</button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- 商品留言弹窗 -->
+  <div v-if="commentBox.visible" class="modal-mask" @click.self="commentBox.visible=false">
+    <div class="modal">
+      <h3 style="margin-bottom:4px;">💬 留言板：{{ commentBox.item.title }}</h3>
+      <p style="color:#888;font-size:12px;margin-bottom:12px;">以 {{ currentUser }} 的身份留言，共 {{ commentBox.list.length }} 条</p>
+      <div class="comment-list">
+        <div v-if="commentBox.list.length===0" style="color:#aaa;text-align:center;padding:24px 0;">还没有留言，快来抢沙发~</div>
+        <div v-for="c in commentBox.list" :key="c.id" class="comment-item">
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <b style="font-size:13px;color:#1e3c72;">{{ c.commenter }}</b>
+            <span style="font-size:12px;color:#aaa;">{{ c.comment_date }}
+              <a v-if="c.commenter===currentUser || userInfo.role==='admin'" @click="deleteComment(c)" style="color:#ef4444;cursor:pointer;margin-left:8px;">删除</a>
+            </span>
+          </div>
+          <p style="font-size:14px;margin-top:4px;line-height:1.6;">{{ c.content }}</p>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:14px;">
+        <input v-model="commentBox.content" placeholder="友善留言，与卖家沟通..." style="flex:1;" @keyup.enter="submitComment">
+        <button class="btn btn-success" @click="submitComment">发送留言</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 余额充值弹窗 -->
+  <div v-if="rechargeVisible" class="modal-mask" @click.self="rechargeVisible=false">
+    <div class="modal">
+      <h3 style="margin-bottom:4px;">💰 账户余额充值</h3>
+      <p style="color:#666;font-size:13px;margin-bottom:12px;">当前账号：<b>{{ currentUser }}</b>，当前余额 ￥{{ userInfo.balance || 0 }}</p>
+      <input v-model.number="rechargeAmount" type="number" min="1" placeholder="输入充值金额（元）" style="width:100%;margin-bottom:10px;">
+      <div style="display:flex;gap:8px;margin-bottom:16px;">
+        <button class="btn" style="background:#eef2ff;color:#1e3c72;" @click="rechargeAmount=50">50元</button>
+        <button class="btn" style="background:#eef2ff;color:#1e3c72;" @click="rechargeAmount=100">100元</button>
+        <button class="btn" style="background:#eef2ff;color:#1e3c72;" @click="rechargeAmount=200">200元</button>
+        <button class="btn" style="background:#eef2ff;color:#1e3c72;" @click="rechargeAmount=500">500元</button>
+      </div>
+      <div style="display:flex;gap:10px;justify-content:flex-end;">
+        <button class="btn" style="background:#9ca3af;" @click="rechargeVisible=false">取消</button>
+        <button class="btn btn-success" @click="submitRecharge">确认充值</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const { createApp } = Vue;
+
+// ===== 内置完整初始数据库（38件商品 + 17条留言 + 7条订单 + 3条失物招领） =====
+function buildInitialDB() {
+  const users = [
+    { id: 1, username: "张三(学生)", role: "student", dept: "计算机学院", balance: 1500.0 },
+    { id: 2, username: "李四(学生)", role: "student", dept: "外国语学院", balance: 860.0 },
+    { id: 3, username: "王五(学生)", role: "student", dept: "机械工程学院", balance: 420.0 },
+    { id: 4, username: "Admin(管理员)", role: "admin", dept: "校团委信息中心", balance: 9999.0 }
+  ];
+  const rawItems = [
+    ["罗技 G Pro 无线鼠标", "数码电子", 260.0, "九成新", "李四(学生)", "在售", "宿舍自用半年，箱说全，无双击，送鼠标垫"],
+    ["2027考研英语黄皮书全套", "图书教材", 35.0, "全新未拆", "王五(学生)", "在售", "买重了，一页没写，北苑食堂当面交易"],
+    ["捷安特山地变速自行车", "代步工具", 450.0, "八成新", "李四(学生)", "在售", "大四毕业挥泪甩卖，刹车灵敏，送车锁"],
+    ["小米护眼宿舍充电台灯", "生活百货", 29.9, "九五新", "王五(学生)", "在售", "三档调光，断电续航6小时，毕业带不走"],
+    ["iPad Air 5 64G 蓝色 + Apple Pencil", "数码电子", 2100.0, "九五新", "李四(学生)", "在售", "平时只用来记高数笔记，电池健康度94%"],
+    ["《软件工程导论（第6版）》课本", "图书教材", 15.0, "八成新", "王五(学生)", "在售", "内有期末重点勾画，学弟学妹考前突击必备"],
+    ["雅马哈 F310 民谣木吉他", "文体乐器", 380.0, "九成新", "李四(学生)", "待审核", "社团演出用过两次，附送琴包、变调夹和拨片"],
+    ["漫步者头戴式降噪蓝牙耳机", "数码电子", 120.0, "九成新", "张三(学生)", "已售出", "图书馆自习神器，耳罩刚换新"],
+    ["Kindle Paperwhite 4 电子书阅读器", "数码电子", 350.0, "九成新", "张三(学生)", "在售", "考研上岸退坑，屏幕无划痕，送磁吸保护套和数据线"],
+    ["罗技 K380 多设备蓝牙键盘", "数码电子", 85.0, "九五新", "李四(学生)", "在售", "可同时连手机平板电脑三台设备，粉白配色，附电池"],
+    ["小米手环 8 NFC 版", "数码电子", 129.0, "九成新", "王五(学生)", "在售", "刷食堂饭卡超方便，续航两周，附两条替换表带"],
+    ["绿联 Type-C 六合一拓展坞", "数码电子", 69.0, "九成新", "张三(学生)", "在售", "课设答辩连投影神器，HDMI+千兆网口+三个USB"],
+    ["富士 instax mini12 拍立得", "数码电子", 420.0, "九成新", "李四(学生)", "待审核", "社团招新用过两次，附相纸十张和奶茶色相机包"],
+    ["倍思 65W 氮化镓充电头", "数码电子", 45.0, "九五新", "王五(学生)", "在售", "笔记本手机都能快充，宿舍限电也带得动"],
+    ["高等数学同济版上下册+习题全解指南", "图书教材", 28.0, "八成新", "王五(学生)", "在售", "重点已用荧光笔标好，期末周救急必备"],
+    ["大学英语四级真题逐句精解（含听力码）", "图书教材", 18.0, "七成新", "张三(学生)", "在售", "已过级退坑，前五套已写完，附赠答题卡"],
+    ["数据结构（C语言版）严蔚敏教材", "图书教材", 20.0, "八成新", "李四(学生)", "在售", "考研408打基础，各章笔记夹在书里一起送"],
+    ["计算机二级 MS Office 高级应用题库", "图书教材", 12.0, "九成新", "王五(学生)", "在售", "软件激活码没用完，考前刷两周稳过"],
+    ["C Primer Plus 第6版 + 明解C语言合售", "图书教材", 45.0, "八成新", "张三(学生)", "在售", "编程入门两件套，无笔记无划线"],
+    ["九号电动滑板车 F2 Pro", "代步工具", 1399.0, "八成新", "张三(学生)", "在售", "东区到西区通勤神器，续航40km，送车锁和头盔"],
+    ["凤凰26寸复古通勤自行车", "代步工具", 150.0, "七成新", "王五(学生)", "在售", "大四毕业急出，链条刚上过油，自带车筐"],
+    ["迪卡侬 RC100 公路自行车", "代步工具", 1100.0, "九成新", "李四(学生)", "待审核", "只骑了一个学期，变速顺滑，附打气筒和尾灯"],
+    ["小米平衡车 Plus 蓝牙版", "代步工具", 750.0, "八成新", "张三(学生)", "已售出", "操场遛弯用，电池健康，原装充电器齐全"],
+    ["宜家床上折叠电脑桌", "生活百货", 40.0, "八成新", "王五(学生)", "在售", "床上写代码追剧神器，桌腿可折叠不占空间"],
+    ["富光保温杯 500ml", "生活百货", 25.0, "全新未拆", "张三(学生)", "在售", "社团发的奖品重复了，保温12小时"],
+    ["手持挂烫机迷你便携款", "生活百货", 55.0, "八成新", "李四(学生)", "在售", "面试前熨衬衫用过几次，水箱大好收纳"],
+    ["宿舍遮光床帘 1.2米+全套支架", "生活百货", 35.0, "八成新", "王五(学生)", "在售", "装上秒变单人小世界，遮光率90%"],
+    ["小熊宿舍电煮锅 1.2L", "生活百货", 65.0, "九成新", "张三(学生)", "已售出", "煮面煮小火锅全能，功率小不限电"],
+    ["USB静音夹式小风扇", "生活百货", 22.0, "八成新", "李四(学生)", "在售", "夹床头夹书桌都行，三档风速几乎听不见"],
+    ["雅马哈 F600 民谣吉他", "文体乐器", 480.0, "九成新", "李四(学生)", "在售", "琴颈无变形，附琴包、变调夹和三本教程"],
+    ["卡马 B1 面单吉他", "文体乐器", 260.0, "八成新", "王五(学生)", "在售", "新手练了半年已换新弦，音色在线"],
+    ["61键电子琴初学套装", "文体乐器", 180.0, "八成新", "张三(学生)", "待审核", "音乐选修课结课出，带琴架，可插耳机静音练"],
+    ["斯伯丁7号PU篮球", "运动健身", 110.0, "八成新", "王五(学生)", "在售", "室外场打过一学期，气足不起皮"],
+    ["尤尼克斯羽毛球拍双拍套装", "运动健身", 150.0, "九成新", "李四(学生)", "在售", "附球一筒和双拍包，约球神器"],
+    ["可调节哑铃 20kg 一对", "运动健身", 130.0, "八成新", "张三(学生)", "在售", "宿舍撸铁必备，包胶设计不吵楼下"],
+    ["完美日记眼影盘+化妆刷套装", "美妆个护", 60.0, "九成新", "李四(学生)", "在售", "囤重复了，眼影只用过两次，刷具全新"],
+    ["飞利浦电动牙刷 HX3216", "美妆个护", 89.0, "九成新", "王五(学生)", "在售", "双十一囤多了，全新未拆仅开封外盒"],
+    ["北面情侣款冲锋衣 M码", "服饰鞋包", 320.0, "九成新", "张三(学生)", "在售", "买大了一码，防水透气，可小刀"]
+  ];
+  const items = rawItems.map((r, idx) => ({
+    id: idx + 1, title: r[0], category: r[1], price: r[2], condition: r[3], seller: r[4], status: r[5], description: r[6]
+  }));
+  const rawComments = [
+    ["罗技 G Pro 无线鼠标", "张三(学生)", "楼主，打瓦灵敏度跟手吗？", "10-23"],
+    ["罗技 G Pro 无线鼠标", "李四(学生)", "自用很跟手，可北苑食堂当面验货", "10-23"],
+    ["2027考研英语黄皮书全套", "张三(学生)", "学长能再便宜5块吗？", "10-24"],
+    ["iPad Air 5 64G 蓝色 + Apple Pencil", "王五(学生)", "电池健康度有截图吗？想周末面交", "10-24"],
+    ["Kindle Paperwhite 4 电子书阅读器", "李四(学生)", "晚上熄灯后背光刺眼吗？", "10-24"],
+    ["迪卡侬 RC100 公路自行车", "王五(学生)", "我178骑合适吗？变速是几个速别？", "10-24"],
+    ["斯伯丁7号PU篮球", "张三(学生)", "周末约球！这个球室外场耐磨吗", "10-24"],
+    ["尤尼克斯羽毛球拍双拍套装", "李四(学生)", "球拍断过线吗？求实拍图", "10-24"],
+    ["捷安特山地变速自行车", "张三(学生)", "车子还在吗？想周末去看车", "10-23"],
+    ["小米护眼宿舍充电台灯", "张三(学生)", "熄灯后能亮多久呀？", "10-23"],
+    ["小米护眼宿舍充电台灯", "王五(学生)", "实测六小时没问题，放心", "10-24"],
+    ["高等数学同济版上下册+习题全解指南", "李四(学生)", "重点笔记能拍照看看吗", "10-23"],
+    ["雅马哈 F310 民谣木吉他", "张三(学生)", "新人入门够用吗？求实话", "10-24"],
+    ["漫步者头戴式降噪蓝牙耳机", "王五(学生)", "图书馆戴真的隔音吗", "10-23"],
+    ["小米手环 8 NFC 版", "李四(学生)", "续航真能两周？", "10-24"],
+    ["九号电动滑板车 F2 Pro", "王五(学生)", "可以先试骑一圈再决定吗", "10-24"],
+    ["宜家床上折叠电脑桌", "李四(学生)", "可以送到楼下自提点吗", "10-24"]
+  ];
+  const comments = [];
+  rawComments.forEach((rc, idx) => {
+    const target = items.find(i => i.title === rc[0]);
+    if (target) comments.push({ id: idx + 1, item_id: target.id, commenter: rc[1], content: rc[2], comment_date: rc[3] });
+  });
+  const orders = [
+    { id: 1, item_id: 8, item_title: "漫步者头戴式降噪蓝牙耳机", buyer: "李四(学生)", seller: "张三(学生)", price: 120.0, order_date: "10-18" },
+    { id: 2, item_id: 0, item_title: "高等数学同济第七版上下册", buyer: "张三(学生)", seller: "王五(学生)", price: 25.0, order_date: "10-19" },
+    { id: 3, item_id: 0, item_title: "寝室多功能折叠桌", buyer: "王五(学生)", seller: "李四(学生)", price: 30.0, order_date: "10-20" },
+    { id: 4, item_id: 0, item_title: "Casio 科学计算器", buyer: "张三(学生)", seller: "李四(学生)", price: 45.0, order_date: "10-21" },
+    { id: 5, item_id: 0, item_title: "尤克里里23寸小吉他", buyer: "李四(学生)", seller: "王五(学生)", price: 110.0, order_date: "10-22" },
+    { id: 6, item_id: 0, item_title: "机械键盘红轴87键", buyer: "张三(学生)", seller: "王五(学生)", price: 160.0, order_date: "10-23" },
+    { id: 7, item_id: 0, item_title: "索尼便携蓝牙音箱", buyer: "王五(学生)", seller: "张三(学生)", price: 220.0, order_date: "10-24" }
+  ];
+  const lost_found = [
+    { id: 1, kind: "寻物启事", title: "丢失深蓝色校园一卡通（学号尾号0821）", location: "第三教学楼 204 阶梯教室", contact: "138****5521", pub_date: "2026-10-23", publisher: "张三(学生)" },
+    { id: 2, kind: "失物招领", title: "捡到 AirPods Pro 耳机充电仓一个", location: "第一食堂二楼麻辣烫窗口", contact: "放于食堂一楼失物招领处", pub_date: "2026-10-24", publisher: "李四(学生)" },
+    { id: 3, kind: "寻物启事", title: "遗失黑色天堂雨伞及《离散数学》教材", location: "图书馆四楼自习区靠窗", contact: "微信：campus_zhang", pub_date: "2026-10-24", publisher: "王五(学生)" }
+  ];
+  return { users, items, comments, orders, lost_found };
+}
+
+function getLocalDB() {
+  const raw = localStorage.getItem('campus_glm_v2_db');
+  if (raw) { try { return JSON.parse(raw); } catch(e) {} }
+  const init = buildInitialDB();
+  localStorage.setItem('campus_glm_v2_db', JSON.stringify(init));
+  return init;
+}
+function saveLocalDB(db) { localStorage.setItem('campus_glm_v2_db', JSON.stringify(db)); }
+
+// 智能双模拦截器：有 Python 后端时走真实后端，在 Cloudflare Pages 等纯静态环境下自动走本地数据库
+const rawFetch = window.fetch.bind(window);
+window.fetch = async function(url, options = {}) {
+  try {
+    const res = await rawFetch(url, options);
+    const ct = res.headers.get('content-type') || '';
+    if (ct.includes('application/json')) return res;
+  } catch (e) {}
+  return handleLocalApi(String(url), options);
+};
+
+function jsonRes(obj, status = 200) {
+  return { ok: status >= 200 && status < 300, status, json: async () => obj };
+}
+
+function handleLocalApi(urlStr, options) {
+  const db = getLocalDB();
+  const u = new URL(urlStr, 'http://localhost');
+  const path = u.pathname;
+  const method = (options.method || 'GET').toUpperCase();
+  const body = options.body ? JSON.parse(options.body) : {};
+
+  if (path === '/api/init_info' && method === 'GET') {
+    const uname = u.searchParams.get('username') || '张三(学生)';
+    const user = db.users.find(x => x.username === uname) || db.users[0];
+    const items = [...db.items].sort((a, b) => b.id - a.id).map(it => ({
+      ...it, comment_count: db.comments.filter(c => c.item_id === it.id).length
+    }));
+    const orders = [...db.orders].sort((a, b) => b.id - a.id);
+    const lost_found = [...db.lost_found].sort((a, b) => b.id - a.id);
+    const catMap = {};
+    db.items.filter(i => i.status === '在售').forEach(i => { catMap[i.category] = (catMap[i.category] || 0) + 1; });
+    const categories = Object.keys(catMap).map(k => ({ name: k, value: catMap[k] }));
+    const dayMap = {};
+    db.orders.forEach(o => { dayMap[o.order_date] = (dayMap[o.order_date] || 0) + Number(o.price); });
+    const daily_sales = Object.keys(dayMap).sort().map(d => ({ order_date: d, total: dayMap[d] }));
+    return jsonRes({ user, items, orders, lost_found, charts: { categories, daily_sales } });
+  }
+  if (path === '/api/items' && method === 'POST') {
+    if (!body.title || !body.title.trim()) return jsonRes({ detail: '商品名称不能为空' }, 400);
+    if (!body.description || !body.description.trim()) return jsonRes({ detail: '商品描述不能为空' }, 400);
+    if (Number(body.price) < 0) return jsonRes({ detail: '价格不能为负数' }, 400);
+    const nextId = db.items.reduce((m, i) => Math.max(m, i.id), 0) + 1;
+    db.items.push({ id: nextId, ...body, status: '在售' });
+    saveLocalDB(db);
+    return jsonRes({ msg: '发布成功' });
+  }
+  if (path === '/api/buy' && method === 'POST') {
+    const item = db.items.find(i => i.id === body.item_id);
+    const buyer = db.users.find(u => u.username === body.buyer);
+    if (!item) return jsonRes({ detail: '商品不存在' }, 400);
+    if (item.status !== '在售') return jsonRes({ detail: '商品已售出或未上架' }, 400);
+    if (!buyer) return jsonRes({ detail: '买家账户不存在' }, 404);
+    if (item.seller === body.buyer) return jsonRes({ detail: '不能购买自己发布的商品' }, 400);
+    if (buyer.balance < item.price) return jsonRes({ detail: '账户余额不足，请先充值' }, 400);
+    buyer.balance = +(buyer.balance - item.price).toFixed(2);
+    const seller = db.users.find(u => u.username === item.seller);
+    if (seller) seller.balance = +(seller.balance + item.price).toFixed(2);
+    item.status = '已售出';
+    const nextOid = db.orders.reduce((m, o) => Math.max(m, o.id), 0) + 1;
+    db.orders.push({ id: nextOid, item_id: item.id, item_title: item.title, buyer: body.buyer, seller: item.seller, price: item.price, order_date: '10-24' });
+    saveLocalDB(db);
+    return jsonRes({ msg: '购买成功！订单已生成' });
+  }
+  if (path === '/api/recharge' && method === 'POST') {
+    if (!body.amount || Number(body.amount) <= 0) return jsonRes({ detail: '充值金额必须大于0' }, 400);
+    const user = db.users.find(u => u.username === body.username);
+    if (!user) return jsonRes({ detail: '用户不存在' }, 404);
+    user.balance = +(user.balance + Number(body.amount)).toFixed(2);
+    saveLocalDB(db);
+    return jsonRes({ msg: `充值成功！到账 ${body.amount} 元`, balance: user.balance });
+  }
+  if (path.startsWith('/api/comments/') && method === 'GET') {
+    const itemId = Number(path.split('/').pop());
+    const rows = db.comments.filter(c => c.item_id === itemId).sort((a, b) => b.id - a.id);
+    return jsonRes({ comments: rows });
+  }
+  if (path === '/api/comments' && method === 'POST') {
+    const content = (body.content || '').trim();
+    if (!content) return jsonRes({ detail: '留言内容不能为空' }, 400);
+    const nextCid = db.comments.reduce((m, c) => Math.max(m, c.id), 0) + 1;
+    db.comments.push({ id: nextCid, item_id: body.item_id, commenter: body.commenter, content, comment_date: '10-24' });
+    saveLocalDB(db);
+    return jsonRes({ msg: '留言成功' });
+  }
+  if (path.startsWith('/api/comments/') && method === 'DELETE') {
+    const cid = Number(path.split('/').pop());
+    const uname = u.searchParams.get('username');
+    const row = db.comments.find(c => c.id === cid);
+    if (!row) return jsonRes({ detail: '留言不存在' }, 404);
+    const user = db.users.find(x => x.username === uname);
+    const isAdmin = user && user.role === 'admin';
+    if (row.commenter !== uname && !isAdmin) return jsonRes({ detail: '只能删除自己发布的留言' }, 403);
+    db.comments = db.comments.filter(c => c.id !== cid);
+    saveLocalDB(db);
+    return jsonRes({ msg: '删除成功' });
+  }
+  if (path.startsWith('/api/audit/') && method === 'POST') {
+    const id = Number(path.split('/').pop());
+    const status = u.searchParams.get('status');
+    const uname = u.searchParams.get('username');
+    const user = db.users.find(x => x.username === uname);
+    if (!user || user.role !== 'admin') return jsonRes({ detail: '仅管理员可执行审核操作' }, 403);
+    const item = db.items.find(i => i.id === id);
+    if (!item) return jsonRes({ detail: '商品不存在' }, 404);
+    const hasOrder = db.orders.some(o => o.item_id === id);
+    if (item.status === '已售出' || hasOrder) return jsonRes({ detail: '该商品已存在交易记录，不可上架或下架' }, 400);
+    item.status = status;
+    saveLocalDB(db);
+    return jsonRes({ msg: '状态已更新' });
+  }
+  if (path.startsWith('/api/items/') && method === 'DELETE') {
+    const id = Number(path.split('/').pop());
+    const uname = u.searchParams.get('username');
+    const item = db.items.find(i => i.id === id);
+    if (!item) return jsonRes({ detail: '商品不存在' }, 404);
+    const user = db.users.find(x => x.username === uname);
+    const isAdmin = user && user.role === 'admin';
+    if (item.seller !== uname && !isAdmin) return jsonRes({ detail: '只能删除自己发布的商品' }, 403);
+    const hasOrder = db.orders.some(o => o.item_id === id);
+    if (!isAdmin && (item.status === '已售出' || hasOrder)) return jsonRes({ detail: '该商品已产生交易记录，不可删除' }, 403);
+    db.items = db.items.filter(i => i.id !== id);
+    db.comments = db.comments.filter(c => c.item_id !== id);
+    saveLocalDB(db);
+    return jsonRes({ msg: '删除成功' });
+  }
+  if (path === '/api/lost_found' && method === 'POST') {
+    if (!body.title || !body.title.trim()) return jsonRes({ detail: '物品描述不能为空' }, 400);
+    if (!body.location || !body.location.trim()) return jsonRes({ detail: '地点不能为空' }, 400);
+    if (!body.contact || !body.contact.trim()) return jsonRes({ detail: '联系方式不能为空' }, 400);
+    const nextLid = db.lost_found.reduce((m, l) => Math.max(m, l.id), 0) + 1;
+    db.lost_found.push({ id: nextLid, ...body, pub_date: '2026-10-24' });
+    saveLocalDB(db);
+    return jsonRes({ msg: '发布成功' });
+  }
+  if (path.startsWith('/api/lost_found/') && method === 'DELETE') {
+    const id = Number(path.split('/').pop());
+    const uname = u.searchParams.get('username');
+    const row = db.lost_found.find(l => l.id === id);
+    if (!row) return jsonRes({ detail: '信息不存在' }, 404);
+    const user = db.users.find(x => x.username === uname);
+    const isAdmin = user && user.role === 'admin';
+    if (row.publisher !== uname && !isAdmin) return jsonRes({ detail: '只能删除自己发布的信息' }, 403);
+    db.lost_found = db.lost_found.filter(l => l.id !== id);
+    saveLocalDB(db);
+    return jsonRes({ msg: '删除成功' });
+  }
+  return jsonRes({});
+}
+
+createApp({
+  data() {
+    return {
+      tab: 'market',
+      currentUser: '张三(学生)',
+      userInfo: {},
+      items: [],
+      orders: [],
+      lostFound: [],
+      chartData: { categories: [], daily_sales: [] },
+      searchKey: '',
+      selectedCategory: '',
+      newItem: { title: '', category: '数码电子', price: 50, condition: '九成新', description: '' },
+      newLost: { kind: '寻物启事', title: '', location: '', contact: '' },
+      commentBox: { visible: false, item: {}, list: [], content: '' },
+      rechargeVisible: false,
+      rechargeAmount: 50,
+      lastUpdate: '',
+      refreshTimer: null
+    }
+  },
+  computed: {
+    filteredItems() {
+      return this.items.filter(i => {
+        const matchKey = i.title.includes(this.searchKey) || i.description.includes(this.searchKey);
+        const matchCat = !this.selectedCategory || i.category === this.selectedCategory;
+        return matchKey && matchCat && i.status !== '违规下架';
+      });
+    },
+    lostFormValid() {
+      const l = this.newLost;
+      return !!(l.kind && l.title.trim() && l.location.trim() && l.contact.trim());
+    },
+    itemFormValid() {
+      const n = this.newItem;
+      return !!(n.title.trim() && n.description.trim() && Number(n.price) >= 0);
+    },
+    myItems() {
+      return this.items.filter(i => i.seller === this.currentUser);
+    },
+    orderedItemIds() {
+      return new Set(this.orders.map(o => o.item_id));
+    }
+  },
+  methods: {
+    async fetchData() {
+      const res = await fetch(`/api/init_info?username=${encodeURIComponent(this.currentUser)}`);
+      const data = await res.json();
+      this.userInfo = data.user;
+      if (this.tab === 'admin' && this.userInfo.role !== 'admin') this.tab = 'market';
+      this.items = data.items;
+      this.orders = data.orders;
+      this.lostFound = data.lost_found;
+      this.chartData = data.charts;
+      this.lastUpdate = new Date().toLocaleTimeString('zh-CN', { hour12: false });
+      if (this.tab === 'admin') this.$nextTick(() => this.renderCharts());
+    },
+    async buyItem(item) {
+      const res = await fetch('/api/buy', {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ item_id: item.id, buyer: this.currentUser })
+      });
+      const data = await res.json();
+      alert(data.msg || data.detail);
+      this.fetchData();
+    },
+    async publishItem() {
+      if (!this.newItem.title.trim()) return alert('请填写商品名称');
+      if (!(Number(this.newItem.price) >= 0)) return alert('请填写正确的价格');
+      if (!this.newItem.description.trim()) return alert('请填写商品描述');
+      const res = await fetch('/api/items', {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ ...this.newItem, seller: this.currentUser })
+      });
+      const data = await res.json();
+      if (!res.ok) return alert('发布失败：' + (data.detail || '请检查输入'));
+      alert('商品发布成功！');
+      this.newItem.title = ''; this.newItem.description = '';
+      this.tab = 'market';
+      this.fetchData();
+    },
+    async publishLost() {
+      if (!this.newLost.title.trim()) return alert('请填写物品描述');
+      if (!this.newLost.location.trim()) return alert('请填写丢失/拾取地点');
+      if (!this.newLost.contact.trim()) return alert('请填写联系方式');
+      const res = await fetch('/api/lost_found', {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ ...this.newLost, publisher: this.currentUser })
+      });
+      const data = await res.json();
+      if (!res.ok) return alert('发布失败：' + (data.detail || '请检查输入'));
+      alert('发布成功！');
+      this.newLost.title = ''; this.newLost.location = ''; this.newLost.contact = '';
+      this.fetchData();
+    },
+    async deleteLost(lf) {
+      if (!confirm('确定删除这条信息吗？')) return;
+      const res = await fetch(`/api/lost_found/${lf.id}?username=${encodeURIComponent(this.currentUser)}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (!res.ok) return alert('删除失败：' + (data.detail || '无权限'));
+      this.fetchData();
+    },
+    itemLocked(item) {
+      return item.status === '已售出' || this.orderedItemIds.has(item.id);
+    },
+    statusStyle(status) {
+      const map = {
+        '在售': 'background:#d1fae5;color:#065f46;',
+        '已售出': 'background:#f3f4f6;color:#6b7280;',
+        '待审核': 'background:#fef3c7;color:#92400e;',
+        '违规下架': 'background:#fee2e2;color:#991b1b;'
+      };
+      return map[status] || '';
+    },
+    async openComments(item) {
+      this.commentBox.item = item;
+      this.commentBox.content = '';
+      this.commentBox.visible = true;
+      const res = await fetch(`/api/comments/${item.id}`);
+      const data = await res.json();
+      this.commentBox.list = data.comments || [];
+    },
+    async submitComment() {
+      if (!this.commentBox.content.trim()) return alert('请输入留言内容');
+      const res = await fetch('/api/comments', {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ item_id: this.commentBox.item.id, commenter: this.currentUser, content: this.commentBox.content })
+      });
+      const data = await res.json();
+      if (!res.ok) return alert('留言发送失败：' + (data.detail || '请检查输入'));
+      this.commentBox.content = '';
+      await this.openComments(this.commentBox.item);
+      this.fetchData();
+    },
+    async deleteComment(c) {
+      if (!confirm('确定删除这条留言吗？')) return;
+      const res = await fetch(`/api/comments/${c.id}?username=${encodeURIComponent(this.currentUser)}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (!res.ok) return alert('删除失败：' + (data.detail || '无权限'));
+      await this.openComments(this.commentBox.item);
+      this.fetchData();
+    },
+    openRecharge() {
+      this.rechargeAmount = 50;
+      this.rechargeVisible = true;
+    },
+    async submitRecharge() {
+      if (!this.rechargeAmount || this.rechargeAmount <= 0) return alert('请输入正确的充值金额');
+      const res = await fetch('/api/recharge', {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ username: this.currentUser, amount: this.rechargeAmount })
+      });
+      const data = await res.json();
+      alert(data.msg || data.detail);
+      this.rechargeVisible = false;
+      this.fetchData();
+    },
+    async auditItem(id, status) {
+      const res = await fetch(`/api/audit/${id}?status=${encodeURIComponent(status)}&username=${encodeURIComponent(this.currentUser)}`, { method: 'POST' });
+      const data = await res.json();
+      if (!res.ok) return alert('操作失败：' + (data.detail || '无权限'));
+      this.fetchData();
+    },
+    async deleteItem(item) {
+      if (!confirm(`确定删除商品「${item.title}」吗？删除后不可恢复，其留言也会一并删除。`)) return;
+      const res = await fetch(`/api/items/${item.id}?username=${encodeURIComponent(this.currentUser)}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (!res.ok) return alert('删除失败：' + (data.detail || '无权限'));
+      this.fetchData();
+    },
+    switchAdminTab() {
+      if (this.userInfo.role !== 'admin') return alert('仅管理员可访问后台与数据大屏');
+      this.tab = 'admin';
+      this.$nextTick(() => this.renderCharts());
+    },
+    renderCharts() {
+      const pieEl = document.getElementById('pieChart');
+      if (!pieEl) return;
+      const pie = echarts.getInstanceByDom(pieEl) || echarts.init(pieEl);
+      const total = this.chartData.categories.reduce((s, c) => s + c.value, 0);
+      pie.setOption({
+        title: { text: '在售商品分类占比', subtext: '实时 · 共 ' + total + ' 件在售', left: 'center' },
+        tooltip: { trigger: 'item' },
+        series: [{ type: 'pie', radius: '60%', data: this.chartData.categories }]
+      });
+      const lineEl = document.getElementById('lineChart');
+      if (!lineEl) return;
+      const line = echarts.getInstanceByDom(lineEl) || echarts.init(lineEl);
+      line.setOption({
+        title: { text: '近 7 日平台成交金额趋势 (元)', left: 'center' },
+        tooltip: { trigger: 'axis' },
+        xAxis: { type: 'category', data: this.chartData.daily_sales.map(d => d.order_date) },
+        yAxis: { type: 'value' },
+        series: [{ data: this.chartData.daily_sales.map(d => d.total), type: 'line', smooth: true, areaStyle: {} }]
+      });
+    }
+  },
+  mounted() {
+    this.fetchData();
+    this.refreshTimer = setInterval(() => {
+      if (this.tab === 'admin') this.fetchData();
+    }, 5000);
+    this._resizeCharts = () => {
+      ['pieChart', 'lineChart'].forEach(id => {
+        const el = document.getElementById(id);
+        const inst = el && echarts.getInstanceByDom(el);
+        if (inst) inst.resize();
+      });
+    };
+    window.addEventListener('resize', this._resizeCharts);
+  },
+  beforeUnmount() {
+    clearInterval(this.refreshTimer);
+    window.removeEventListener('resize', this._resizeCharts);
+  }
+}).mount('#app');
+</script>
+</body>
+</html>
